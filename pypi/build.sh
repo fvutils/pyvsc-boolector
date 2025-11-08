@@ -73,7 +73,7 @@ log "Entering pyboolector directory"
 cd pyboolector
 
 for py in $PYTHON_VERSIONS; do
-  python=$(ls /opt/python/${py}-*/bin/python)
+  python=/opt/python/${py}-*/bin/python
   log "Building for ABI ${py} using interpreter ${python}"
   log "Installing Python build dependencies"
   ${python} -m pip install cython wheel setuptools
