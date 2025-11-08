@@ -105,7 +105,7 @@ jobs:
         working-directory: build
         run: |
           make VERBOSE=1 -j ${{ env.ncpus }}
-          make VERBOSE=1 install
+          sudo make VERBOSE=1 install
 
       - name: Build PyPi package
         run: |
