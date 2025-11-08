@@ -135,9 +135,9 @@ jobs:
           sed -e 's/override//g' -e 's/noexcept/_NOEXCEPT/g' -e 's/\(BoolectorException (const.*\)/\1    virtual ~BoolectorException() _NOEXCEPT {}/' src/pyboolector_abort.cpp > src/pyboolector_abort.cpp.new
           if test $? -ne 0; then exit 1; fi
           cp src/pyboolector_abort.cpp.new src/pyboolector_abort.cpp
-          python3 src/mkenums.py ./src/btortypes.h src/pyboolector_enums.pxd
+          ../py/bin/python3 src/mkenums.py ./src/btortypes.h src/pyboolector_enums.pxd
           if test $? -ne 0; then exit 1; fi
-          python3 setup.py sdist bdist_wheel
+          ../py/bin/python3 setup.py sdist bdist_wheel
           if test $? -ne 0; then exit 1; fi
 
       - name: Upload artifacts
