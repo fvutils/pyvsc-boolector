@@ -58,7 +58,7 @@ cd pyboolector
 for py in $PYTHON_VERSIONS; do
   python=$(ls /opt/python/${py}-*/bin/python)
   echo "Python: ${python}"
-  ${python} -m pip install cython wheel
+  ${python} -m pip install cython wheel setuptools
   cd ${BUILD_DIR}/pyboolector
   rm -rf src
   cp -r ${BUILD_DIR}/boolector/src/api/python src

@@ -64,7 +64,9 @@ jobs:
         run: echo "ncpus=$(sysctl -n hw.logicalcpu)" >> $GITHUB_ENV
 
       - name: Install Cython
-        run: sudo pip3 install --break-system-packages cython wheel setuptools
+        run: |
+          python3 -m venv py
+          ./py/bin/pip3 install cython wheel setuptools
 
       - name: Setup btor2tools dependency
         run: |
@@ -136,8 +138,9 @@ jobs:
 
       - name: Install twine
         run: |
-          sudo pip3 install twine
-          python3 -m twine --version
+          ./python3 -m venv py
+          ./py/bin/pip3 install -U twine packaging
+          ./py/bin/python3 -m twine --version
 
       - name: Upload to PyPi
         env:
@@ -147,5 +150,5 @@ jobs:
           echo "Files to upload:"
           ls -l artifacts/dist-*/*.whl artifacts/dist-*/*.tar.gz
           echo "Calling twine"
-          python3 -m twine upload artifacts/dist-*/*.whl artifacts/dist-*/*.tar.gz
+          ./py/bin/python3 -m twine upload artifacts/dist-*/*.whl artifacts/dist-*/*.tar.gz
           echo "Calling twine complete"
