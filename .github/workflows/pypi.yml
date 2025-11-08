@@ -19,19 +19,29 @@ env:
 jobs:
   PyPi_Linux_x86_64:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: [cp38, cp39, cp310, cp311, cp312, cp313]
+        manylinux_image: [manylinux2014_x86_64]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Run PyBoolector Build
+      - name: Run PyBoolector Build (${{ matrix.python }} on ${{ matrix.manylinux_image }})
         run: |
-          docker run -e BUILD_NUM=${{ github.run_number }} -e PYTHON_VERSIONS="${{ env.PYTHON_VERSIONS }}" -v ${{ github.workspace }}:/boolector quay.io/pypa/manylinux2014_x86_64 /boolector/pypi/build.sh
+          docker run \
+            -e BUILD_NUM=${{ github.run_number }} \
+            -e PYTHON_VERSIONS="${{ matrix.python }}" \
+            -v ${{ github.workspace }}:/boolector \
+            quay.io/pypa/${{ matrix.manylinux_image }} \
+            /boolector/pypi/build.sh
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: dist-linux-x86_64
           path: result/dist
+          name: dist-linux-x86_64-${{ matrix.python }}
 
   PyPi_Linux_ppc64le:
     runs-on: ubuntu-latest
