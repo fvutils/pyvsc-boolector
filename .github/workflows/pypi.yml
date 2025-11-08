@@ -1,0 +1,148 @@
+name: PyPI Build and Upload
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+env:
+  # cpython versions to build wheels for.
+  PYTHON_VERSIONS: cp36 cp37 cp38 cp39 cp310 cp311 cp312
+
+jobs:
+  PyPi_Linux_x86_64:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run PyBoolector Build
+        run: |
+          docker run -e BUILD_NUM=${{ github.run_number }} -e PYTHON_VERSIONS="${{ env.PYTHON_VERSIONS }}" -v ${{ github.workspace }}:/boolector quay.io/pypa/manylinux2014_x86_64 /boolector/pypi/build.sh
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-linux-x86_64
+          path: result/dist
+
+  PyPi_Linux_ppc64le:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180  # Builds in emulation are slow
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Qemu to emulate a ppc64le environment
+        run: |
+          sudo docker run --rm --privileged aptman/qus -s -- -p ppc64le
+
+      - name: Run PyBoolector Build
+        run: |
+          docker run -e BUILD_NUM=${{ github.run_number }} -e PYTHON_VERSIONS="${{ env.PYTHON_VERSIONS }}" -v ${{ github.workspace }}:/boolector quay.io/pypa/manylinux2014_ppc64le /boolector/pypi/build.sh
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-linux-ppc64le
+          path: result/dist
+
+  PyPi_MacOS:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Determine number of CPUs
+        run: echo "ncpus=$(sysctl -n hw.logicalcpu)" >> $GITHUB_ENV
+
+      - name: Install Cython
+        run: sudo pip3 install cython wheel setuptools
+
+      - name: Setup btor2tools dependency
+        run: |
+          brew remove boost
+          ./contrib/setup-btor2tools.sh
+          echo "Content of deps/install/lib"
+          ls deps/install/lib
+
+      - name: Setup cadical dependency
+        run: |
+          ./contrib/setup-cadical.sh
+          echo "Content of deps/install/lib"
+          ls deps/install/lib
+
+      - name: Setup lingeling dependency
+        run: |
+          ./contrib/setup-lingeling.sh
+          echo "Content of deps/install/lib"
+          ls deps/install/lib
+          file deps/install/lib/liblgl.a
+
+      - name: Configure Boolector
+        run: ./configure.sh -fPIC --universal
+
+      - name: Build Boolector
+        working-directory: build
+        run: |
+          make VERBOSE=1 -j ${{ env.ncpus }}
+          make VERBOSE=1 install
+
+      - name: Build PyPi package
+        run: |
+          export BUILD_NUM=${{ github.run_number }}
+          echo "Build.Repository.LocalPath/deps/install/lib:"
+          ls ${{ github.workspace }}/deps/install/lib
+          export LIBRARY_PATH=${{ github.workspace }}/deps/install/lib:${{ github.workspace }}/build/lib
+          echo "LIBRARY_PATH: $LIBRARY_PATH"
+          export PACKAGE_BUILD=1
+          cp -r src/api/python pypi/src
+          mkdir -p pypi/src/utils
+          cp src/*.h pypi/src
+          cp COPYING pypi/LICENSE
+          cp src/utils/*.h pypi/src/utils
+          grep VERSION CMakeLists.txt | grep set | grep -v ARCHIVE | sed -e 's%^.*\(".*"\).*$%\1%' -e 's/"//g' > pypi/version.txt
+          cd pypi
+          sed -e 's/override//g' -e 's/noexcept/_NOEXCEPT/g' -e 's/\(BoolectorException (const.*\)/\1    virtual ~BoolectorException() _NOEXCEPT {}/' src/pyboolector_abort.cpp > src/pyboolector_abort.cpp.new
+          if test $? -ne 0; then exit 1; fi
+          cp src/pyboolector_abort.cpp.new src/pyboolector_abort.cpp
+          python3 src/mkenums.py ./src/btortypes.h src/pyboolector_enums.pxd
+          if test $? -ne 0; then exit 1; fi
+          python3 setup.py sdist bdist_wheel
+          if test $? -ne 0; then exit 1; fi
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-macos
+          path: pypi/dist
+
+  PyPi_Upload:
+    runs-on: ubuntu-latest
+    needs: [PyPi_Linux_x86_64, PyPi_Linux_ppc64le, PyPi_MacOS]
+    if: success() && github.ref == 'refs/heads/master'
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Install twine
+        run: |
+          sudo pip3 install twine
+          python3 -m twine --version
+
+      - name: Upload to PyPi
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+        run: |
+          echo "Files to upload:"
+          ls -l artifacts/dist-*/*.whl artifacts/dist-*/*.tar.gz
+          echo "Calling twine"
+          python3 -m twine upload artifacts/dist-*/*.whl artifacts/dist-*/*.tar.gz
+          echo "Calling twine complete"
