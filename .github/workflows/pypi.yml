@@ -31,7 +31,7 @@ jobs:
       - name: Run PyBoolector Build (${{ matrix.python }} on ${{ matrix.manylinux_image }})
         run: |
           docker run \
-            -e BUILD_NUM=${{ github.run_number }} \
+            -e BUILD_NUM=${{ github.run_id }} \
             -e PYTHON_VERSIONS="${{ matrix.python }}" \
             -v ${{ github.workspace }}:/boolector \
             quay.io/pypa/${{ matrix.manylinux_image }} \
@@ -63,7 +63,7 @@ jobs:
 #       - name: Run PyBoolector Build (${{ matrix.python }} on ${{ matrix.manylinux_image }})
 #         run: |
 #           docker run \
-#             -e BUILD_NUM=${{ github.run_number }} \
+#             -e BUILD_NUM=${{ github.run_id }} \
 #             -e PYTHON_VERSIONS="${{ matrix.python }}" \
 #             -v ${{ github.workspace }}:/boolector \
 #             quay.io/pypa/${{ matrix.manylinux_image }} \
@@ -120,7 +120,7 @@ jobs:
 
       - name: Build PyPi package
         run: |
-          export BUILD_NUM=${{ github.run_number }}
+          export BUILD_NUM=${{ github.run_id }}
           echo "Build.Repository.LocalPath/deps/install/lib:"
           ls ${{ github.workspace }}/deps/install/lib
           export LIBRARY_PATH=${{ github.workspace }}/deps/install/lib:${{ github.workspace }}/build/lib
