@@ -23,11 +23,11 @@ cp -r /boolector .
 # Setup dependencies
 cd boolector
 log "Running contrib/setup-btor2tools.sh"
-sh ./contrib/setup-btor2tools.sh
+/bin/bash -x ./contrib/setup-btor2tools.sh
 log "Running contrib/setup-cadical.sh"
-sh ./contrib/setup-cadical.sh
+/bin/bash -x ./contrib/setup-cadical.sh
 log "Running contrib/setup-lingeling.sh"
-sh ./contrib/setup-lingeling.sh
+/bin/bash -x ./contrib/setup-lingeling.sh
 
 #********************************************************************
 #* boolector
