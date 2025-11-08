@@ -160,7 +160,7 @@ jobs:
 
       - name: Install twine
         run: |
-          ./python3 -m venv py
+          python3 -m venv py
           ./py/bin/pip3 install -U twine packaging
           ./py/bin/python3 -m twine --version
 
