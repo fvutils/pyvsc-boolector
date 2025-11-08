@@ -167,7 +167,7 @@ jobs:
       - name: Upload to PyPi
         env:
           TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
         run: |
           echo "Files to upload:"
           ls -l artifacts/dist-*/*.whl artifacts/dist-*/*.tar.gz
