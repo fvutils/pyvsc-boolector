@@ -15,9 +15,9 @@ cp -r /boolector .
 
 # Setup dependencies
 cd boolector
-/bin/sh ./contrib/setup-btor2tools.sh
-/bin/sh ./contrib/setup-cadical.sh
-/bin/sh ./contrib/setup-lingeling.sh
+sh ./contrib/setup-btor2tools.sh
+sh ./contrib/setup-cadical.sh
+sh ./contrib/setup-lingeling.sh
 
 #********************************************************************
 #* boolector

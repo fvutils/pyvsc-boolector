@@ -64,7 +64,7 @@ jobs:
         run: echo "ncpus=$(sysctl -n hw.logicalcpu)" >> $GITHUB_ENV
 
       - name: Install Cython
-        run: sudo pip3 install cython wheel setuptools
+        run: sudo pip3 install --break-system-packages cython wheel setuptools
 
       - name: Setup btor2tools dependency
         run: |
