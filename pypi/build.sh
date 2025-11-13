@@ -90,6 +90,7 @@ for py in $PYTHON_VERSIONS; do
   cp ${BUILD_DIR}/boolector/src/utils/*.h src/utils
   log "Generating enums with $python"
   $python ./src/mkenums.py ./src/btortypes.h ./src/pyboolector_enums.pxd
+  cat src/pyboolector_enums.pxd
   log "Building sdist and wheel with $python"
   $python setup.py sdist bdist_wheel
 done
