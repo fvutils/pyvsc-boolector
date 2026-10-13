@@ -3,8 +3,7 @@
 #****************************************************************************
 import os
 import sys
-from setuptools import setup
-from distutils.extension import Extension
+from setuptools import setup, Extension
 
 if "PACKAGE_BUILD" in os.environ.keys() and os.environ["PACKAGE_BUILD"] != "":
     print("*******************************************************************")
@@ -60,6 +59,8 @@ CLASSIFIERS = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: Implementation :: CPython",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
@@ -77,10 +78,6 @@ setup(
   licenses = ["MIT License"],
   download_url="https://pypi.org/project/PyBoolector/",
   url="https://github.com/boolector/boolector",
-  setup_requires=[
-    'setuptools_scm',
-    'cython'
-  ],
   ext_modules=[ ext ],
   classifiers=CLASSIFIERS
 )
