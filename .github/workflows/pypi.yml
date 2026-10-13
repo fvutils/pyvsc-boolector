@@ -77,21 +77,30 @@ jobs:
 
   PyPi_MacOS:
     runs-on: macos-latest
+    env:
+      # Oldest macOS the wheels (and the static libraries linked into them)
+      # support. Without this, wheels are tagged for the runner's macOS.
+      MACOSX_DEPLOYMENT_TARGET: "11.0"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up Python versions
+        uses: actions/setup-python@v5
+        with:
+          python-version: |
+            3.9
+            3.10
+            3.11
+            3.12
+            3.13
+            3.14
+
       - name: Determine number of CPUs
         run: echo "ncpus=$(sysctl -n hw.logicalcpu)" >> $GITHUB_ENV
 
-      - name: Install Cython
-        run: |
-          python3 -m venv py
-          ./py/bin/pip3 install cython wheel setuptools
-
       - name: Setup btor2tools dependency
         run: |
-          #brew remove boost
           ./contrib/setup-btor2tools.sh
           echo "Content of deps/install/lib"
           ls deps/install/lib
@@ -118,14 +127,8 @@ jobs:
           make VERBOSE=1 -j ${{ env.ncpus }}
           sudo make VERBOSE=1 install
 
-      - name: Build PyPi package
+      - name: Prepare PyPi package sources
         run: |
-          export BUILD_NUM=${{ github.run_id }}
-          echo "Build.Repository.LocalPath/deps/install/lib:"
-          ls ${{ github.workspace }}/deps/install/lib
-          export LIBRARY_PATH=${{ github.workspace }}/deps/install/lib:${{ github.workspace }}/build/lib
-          echo "LIBRARY_PATH: $LIBRARY_PATH"
-          export PACKAGE_BUILD=1
           cp -r src/api/python pypi/src
           mkdir -p pypi/src/utils
           cp src/*.h pypi/src
@@ -134,12 +137,31 @@ jobs:
           grep VERSION CMakeLists.txt | grep set | grep -v ARCHIVE | sed -e 's%^.*\(".*"\).*$%\1%' -e 's/"//g' > pypi/version.txt
           cd pypi
           sed -e 's/override//g' -e 's/noexcept/_NOEXCEPT/g' -e 's/\(BoolectorException (const.*\)/\1    virtual ~BoolectorException() _NOEXCEPT {}/' src/pyboolector_abort.cpp > src/pyboolector_abort.cpp.new
-          if test $? -ne 0; then exit 1; fi
           cp src/pyboolector_abort.cpp.new src/pyboolector_abort.cpp
-          ../py/bin/python3 src/mkenums.py ./src/btortypes.h src/pyboolector_enums.pxd
-          if test $? -ne 0; then exit 1; fi
-          ../py/bin/python3 setup.py sdist bdist_wheel
-          if test $? -ne 0; then exit 1; fi
+          python3 src/mkenums.py ./src/btortypes.h src/pyboolector_enums.pxd
+
+      - name: Build PyPi packages
+        working-directory: pypi
+        run: |
+          set -e
+          export BUILD_NUM=${{ github.run_id }}
+          export LIBRARY_PATH=${{ github.workspace }}/deps/install/lib:${{ github.workspace }}/build/lib
+          export PACKAGE_BUILD=1
+          for v in 3.9 3.10 3.11 3.12 3.13 3.14; do
+            echo "::group::Python $v"
+            rm -rf venv-$v build
+            python$v -m venv venv-$v
+            ./venv-$v/bin/pip install cython wheel setuptools
+            if test $v = 3.14; then
+              ./venv-$v/bin/python setup.py sdist bdist_wheel
+            else
+              ./venv-$v/bin/python setup.py bdist_wheel
+            fi
+            ./venv-$v/bin/pip install dist/*-cp${v/./}-*.whl
+            (cd /tmp && $OLDPWD/venv-$v/bin/python -c "import pyboolector; pyboolector.Boolector()")
+            echo "::endgroup::"
+          done
+          ls -l dist
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
