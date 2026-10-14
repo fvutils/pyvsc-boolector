@@ -76,7 +76,7 @@ for py in $PYTHON_VERSIONS; do
   python=/opt/python/${py}-${py}/bin/python
   log "Building for ABI ${py} using interpreter ${python}"
   log "Installing Python build dependencies"
-  ${python} -m pip install cython wheel setuptools
+  ${python} -m pip install -U cython wheel setuptools
   cd ${BUILD_DIR}/pyboolector
   rm -rf src
   log "Copying Python bindings and headers"

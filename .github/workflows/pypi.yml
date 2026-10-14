@@ -151,7 +151,7 @@ jobs:
             echo "::group::Python $v"
             rm -rf venv-$v build
             python$v -m venv venv-$v
-            ./venv-$v/bin/pip install cython wheel setuptools
+            ./venv-$v/bin/pip install -U cython wheel setuptools
             if test $v = 3.14; then
               ./venv-$v/bin/python setup.py sdist bdist_wheel
             else
@@ -162,6 +162,10 @@ jobs:
             echo "::endgroup::"
           done
           ls -l dist
+          # PyPI rejects wheels whose filenames use a non-normalized project name
+          if ls dist | grep -v '^pyboolector-'; then
+            echo "::error::Non-normalized distribution filenames"; exit 1
+          fi
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
